@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from "react"
+import { validateRegister } from "../helpers/validateForm"
 
 export default function taskForm() {
     //ESTADO INICIAL
@@ -11,6 +12,16 @@ export default function taskForm() {
     // ===== STATES =====
     const [form, setForm] = useState(initialState)
 
+    const [errors, setErrors] = useState({
+        title: "Se requiere un Nombre de tarea",
+        description: "Se requiere una descripccion",
+    })
+
+    const [touched, setTouched] = useState({
+        title: false,
+        description: false,
+    })
+
     // ===== HANDLERS =====
     const handleChange= (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -19,10 +30,26 @@ export default function taskForm() {
             [name]: type === "checkbox" ? checked : value,
         };
         setForm(updatedForm)
+
+        setErrors(validateRegister(updatedForm))
     }
+
+    const handleTouched = (e: React.FocusEvent<HTMLInputElement>) => {
+        const { name } = e.target;
+        setTouched((prev) => ({
+        ...prev,
+        [name]: true,
+        }));
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setTouched({
+            title: true,
+            description: true,
+        });
+        setErrors(validateRegister(form));
+
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tasks`, {
                 method: "POST",
@@ -54,9 +81,14 @@ export default function taskForm() {
                         name="title"
                         value={form.title}
                         onChange={handleChange}
+                        onBlur={handleTouched}
+                        required
                         className="p-2 rounded bg-[#232e47] text-white focus:outline-none"
                         placeholder="Ingrese el título"
                     />
+                    {touched.title && errors.title && (
+                        <span style={{ color: '#8B0000', fontSize: '0.9em' }}>{errors.title}</span>
+                    )}
                 </div>
                 <div className="flex flex-col">
                     <label htmlFor="description" className="text-[#c6dfff] font-semibold mb-1">Descripción</label>
@@ -66,9 +98,14 @@ export default function taskForm() {
                         name="description"
                         value={form.description}
                         onChange={handleChange}
+                        onBlur={handleTouched}
+                        required
                         className="p-2 rounded bg-[#232e47] text-white focus:outline-none"
                         placeholder="Ingrese la descripción"
                     />
+                    {touched.description && errors.description && (
+                        <span style={{ color: '#8B0000', fontSize: '0.9em' }}>{errors.description}</span>
+                    )}
                 </div>
                 <div className="flex justify-between mt-1">
                     <button
